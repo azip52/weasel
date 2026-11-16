@@ -3,6 +3,7 @@
 #include "EditSession.h"
 #include "ResponseParser.h"
 #include "CandidateList.h"
+#include <cwchar>
 
 namespace {
 
