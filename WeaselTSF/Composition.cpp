@@ -4,6 +4,51 @@
 #include "ResponseParser.h"
 #include "CandidateList.h"
 
+namespace {
+
+// Experimental, opt-in workaround for Word changing an inherited Chinese font
+// when the active input profile is zh-TW. This changes the text language only;
+// the registered input profile and Rime's conversion settings stay unchanged.
+void SetWordTextLanguage(TfEditCookie ec, ITfContext* context, ITfRange* range) {
+  static const bool isWord = [] {
+    wchar_t path[MAX_PATH] = {};
+    const DWORD length = GetModuleFileNameW(nullptr, path, ARRAYSIZE(path));
+    if (!length || length >= ARRAYSIZE(path))
+      return false;
+    const wchar_t* name = wcsrchr(path, L'\\');
+    return _wcsicmp(name ? name + 1 : path, L"WINWORD.EXE") == 0;
+  }();
+  if (!isWord)
+    return;
+
+  DWORD language = 0;
+  DWORD size = sizeof(language);
+  if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Rime\\Weasel",
+                   L"WordTextLanguage", RRF_RT_REG_DWORD, nullptr, &language,
+                   &size) != ERROR_SUCCESS ||
+      (language != 0x0804 && language != 0x0404))
+    return;
+
+  BOOL empty = TRUE;
+  if (FAILED(range->IsEmpty(ec, &empty)) || empty)
+    return;
+
+  com_ptr<ITfProperty> property;
+  if (FAILED(context->GetProperty(GUID_PROP_LANGID, &property)))
+    return;
+  VARIANT value;
+  VariantInit(&value);
+  value.vt = VT_I4;
+  value.lVal = static_cast<LONG>(language);
+  // SetValue must follow every SetText, which invalidates range properties.
+  // A host that rejects this optional property must still receive its text.
+  const HRESULT hr = property->SetValue(ec, range, &value);
+  OutputDebugStringW(SUCCEEDED(hr) ? L"Weasel WordTextLanguage: applied\n"
+                                  : L"Weasel WordTextLanguage: rejected\n");
+}
+
+}  // namespace
+
 /* Start Composition */
 class CStartCompositionEditSession : public CEditSession {
  public:
@@ -286,6 +331,8 @@ STDMETHODIMP CInlinePreeditEditSession::DoEditSession(TfEditCookie ec) {
                                   static_cast<LONG>(preedit.length()))) != S_OK)
     return E_FAIL;
 
+  SetWordTextLanguage(ec, _pContext, pRangeComposition);
+
   /* TODO: Check the availability and correctness of these values */
   int sel_cursor = -1;
   for (size_t i = 0; i < _context->preedit.attributes.size(); i++) {
@@ -361,6 +408,8 @@ STDMETHODIMP CInsertTextEditSession::DoEditSession(TfEditCookie ec) {
   if (FAILED(pRange->SetText(ec, 0, _text.c_str(),
                              static_cast<LONG>(_text.length()))))
     return E_FAIL;
+
+  SetWordTextLanguage(ec, _pContext, pRange);
 
   /* update the selection to an insertion point just past the inserted text. */
   pRange->Collapse(ec, TF_ANCHOR_END);
