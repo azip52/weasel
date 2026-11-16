@@ -10,7 +10,9 @@ namespace {
 // Experimental, opt-in workaround for Word changing an inherited Chinese font
 // when the active input profile is zh-TW. This changes the text language only;
 // the registered input profile and Rime's conversion settings stay unchanged.
-void SetWordTextLanguage(TfEditCookie ec, ITfContext* context, ITfRange* range) {
+void SetWordTextLanguage(TfEditCookie ec,
+                         ITfContext* context,
+                         ITfRange* range) {
   static const bool isWord = [] {
     wchar_t path[MAX_PATH] = {};
     const DWORD length = GetModuleFileNameW(nullptr, path, ARRAYSIZE(path));
@@ -44,8 +46,10 @@ void SetWordTextLanguage(TfEditCookie ec, ITfContext* context, ITfRange* range) 
   // SetValue must follow every SetText, which invalidates range properties.
   // A host that rejects this optional property must still receive its text.
   const HRESULT hr = property->SetValue(ec, range, &value);
-  OutputDebugStringW(SUCCEEDED(hr) ? L"Weasel WordTextLanguage: applied\n"
-                                  : L"Weasel WordTextLanguage: rejected\n");
+  if (SUCCEEDED(hr))
+    OutputDebugStringW(L"Weasel WordTextLanguage: applied\n");
+  else
+    OutputDebugStringW(L"Weasel WordTextLanguage: rejected\n");
 }
 
 }  // namespace
