@@ -2,7 +2,7 @@
 
 This branch tests whether explicitly setting TSF `GUID_PROP_LANGID` after
 inserting text prevents Word from replacing an inherited FangSong font with
-PMingLiU. It is an experiment, not a verified fix.
+PMingLiU. It is an opt-in workaround verified for the reported workflow in the environment below.
 
 Verified for the reported new-paragraph workflow on 2026-11-17 (Asia/Taipei)
 with Word 16.0.20527.20196 and build commit
