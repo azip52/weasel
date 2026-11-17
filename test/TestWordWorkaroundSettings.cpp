@@ -13,8 +13,8 @@ int main() {
   HKEY root = nullptr;
   DWORD disposition = 0;
   if (RegCreateKeyExW(HKEY_CURRENT_USER, path.c_str(), 0, nullptr, 0,
-                      KEY_ALL_ACCESS, nullptr, &root, &disposition) !=
-          ERROR_SUCCESS ||
+                      KEY_ALL_ACCESS, nullptr, &root,
+                      &disposition) != ERROR_SUCCESS ||
       disposition != REG_CREATED_NEW_KEY)
     return 3;
   if (RegOverridePredefKey(HKEY_CURRENT_USER, root) != ERROR_SUCCESS) {
@@ -25,10 +25,10 @@ int main() {
   bool passed = word_font_workaround::TextLanguage() == 0x0804 &&
                 word_font_workaround::FollowStyleOnEnter();
   HKEY settings = nullptr;
-  passed = passed &&
-           RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Rime\\Weasel", 0,
-                           nullptr, 0, KEY_ALL_ACCESS, nullptr, &settings,
-                           nullptr) == ERROR_SUCCESS;
+  passed =
+      passed && RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Rime\\Weasel", 0,
+                                nullptr, 0, KEY_ALL_ACCESS, nullptr, &settings,
+                                nullptr) == ERROR_SUCCESS;
   if (settings) {
     passed = passed && word_font_workaround::TextLanguage() == 0x0804 &&
              word_font_workaround::FollowStyleOnEnter();
