@@ -4,9 +4,32 @@ This branch tests whether explicitly setting TSF `GUID_PROP_LANGID` after
 inserting text prevents Word from replacing an inherited FangSong font with
 PMingLiU. It is an experiment, not a verified fix.
 
+Verified for the reported new-paragraph workflow on 2026-11-17 (Asia/Taipei)
+with Word 16.0.20527.20196 and build commit
+`e55e7b2edbd2d6babaca34601654b1f0f1f50c46`.
+
+| Test | Actual input LANGID | Selected committed text font |
+| --- | --- | --- |
+| Setting absent; new paragraph, explicitly apply Normal | 0x0404 | PMingLiU / 新細明體 |
+| WordTextLanguage = 0x0804; same Word process and workflow | 0x0404 | FangSong |
+| Word fully restarted; fresh original document; new paragraph; two consecutive commits | 0x0404 | FangSong for both selected characters |
+
+The active Word thread keyboard language was checked separately from the
+registry preference: it stayed 0x0404. The registered profile remained
+`Hant=1`, `Profile=hant`. A preliminary 0x0804 input-language run was excluded
+from the Taiwan comparison. The default-off binary reproduces the bug, so the
+result is attributable to enabling the property workaround in this build.
+
+**Tradeoff:** newly inserted Word text is tagged with Chinese (China) language
+0x0804. The input method stays registered and active as Chinese (Taiwan); this
+workaround does not preserve the Taiwan proofing-language tag on inserted text.
+Other Word versions, inline preedit, Undo, and replacement of existing selected
+text have not yet been verified.
+
 The change applies only inside WINWORD.EXE. It does not change the registered
 input profile, the candidate window font, or Rime's Traditional Chinese output.
-The default is disabled. No document text is logged.
+The default is disabled; the setting must be enabled separately after installation.
+No document text is logged.
 
 ## Compare the same binary with and without the experiment
 
