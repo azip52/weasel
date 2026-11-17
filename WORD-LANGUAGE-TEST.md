@@ -20,9 +20,12 @@ registry preference: it stayed 0x0404. The registered profile remained
 from the Taiwan comparison. The default-off binary reproduces the bug, so the
 result is attributable to enabling the property workaround in this build.
 
-**Tradeoff:** newly inserted Word text is tagged with Chinese (China) language
-0x0804. The input method stays registered and active as Chinese (Taiwan); this
-workaround does not preserve the Taiwan proofing-language tag on inserted text.
+**Mechanism and scope:** the inserted TSF range receives language property
+0x0804 during insertion while the input method stays registered and active as
+Chinese (Taiwan). In the observed tests, Word's status bar continued to show
+Chinese (Taiwan) for the selected text. TSF language metadata should not be
+assumed to be identical to Word's saved proofing-language metadata; the saved
+DOCX language tags have not been audited.
 Other Word versions, inline preedit, Undo, and replacement of existing selected
 text have not yet been verified.
 
