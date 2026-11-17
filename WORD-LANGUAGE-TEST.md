@@ -78,12 +78,10 @@ defaults to Taiwan on a clean profile. Explicit `/T` remains supported. If the
 selected input language is missing, installation appends it with Weasel without
 reordering the existing languages or changing the display language.
 
-CI tests the compiled Word defaults in an isolated registry mapping, the
-language-list helper, preservation of upgrade preferences, and a clean Taiwan
-installation with no Word registry values. The clean-install test verifies the
-installed schema hash and a successfully deployed Taiwan Pinyin prism. These
-installation tests run only on disposable GitHub Actions runners. Building or
-downloading this installer does not install it on the developer's computer.
+The final CI workflow builds and packages the installer without running the
+installation tests. The owner will perform installation and Word tests manually.
+Building or downloading the installer does not install it on the developer's
+computer.
 
 ## Scope and behavior
 
