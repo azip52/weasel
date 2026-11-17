@@ -41,22 +41,49 @@ pause so the result did not rely on a stale ribbon display. The Word thread's
 actual keyboard LANGID was 0x0404 before and after testing. Registration stayed
 `Hant=1`, `Profile=hant`.
 
-## Enable / disable
+## Default configuration in the personalized installer
 
-The settings are opt-in, disabled by default, and read for each relevant key or
-edit. Installation alone does not enable them on another machine.
+Both Word workarounds are enabled when their registry values are absent. A clean
+installation on another computer needs no registry edits: `WordTextLanguage`
+defaults to `0x0804` and `WordFollowStyleOnEnter` defaults to `1`. Explicit
+existing values continue to take precedence. Settings are read for each relevant
+key or edit.
+
+To explicitly enable them:
 
 ```powershell
 New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordFollowStyleOnEnter -PropertyType DWord -Value 1 -Force
 New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -PropertyType DWord -Value 0x0804 -Force
 ```
 
-To disable the experiments:
+To disable both workarounds (removing values restores the enabled defaults):
 
 ```powershell
-Remove-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordFollowStyleOnEnter -ErrorAction SilentlyContinue
-Remove-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -ErrorAction SilentlyContinue
+New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordFollowStyleOnEnter -PropertyType DWord -Value 0 -Force
+New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -PropertyType DWord -Value 0 -Force
 ```
+
+## Bundled Taiwan scheme and fresh installation
+
+`data/luna_pinyin_tw.schema.yaml` contains the supplied customized schema. The
+data build runs `Customize-BundledData.ps1` after downloading the upstream
+recipes, replacing their Taiwan schema with this tracked copy. Its reset values
+(`switches/@0/reset: 1`, `switches/@2/reset: 3`) are preserved. The Taiwan scheme
+is first in the bundled default schema list; existing user customizations still
+take precedence.
+
+The setup dialog defaults to Chinese (Taiwan). The installer's `/S` mode uses
+`WeaselSetup /quiet`, which preserves a previous registration preference but
+defaults to Taiwan on a clean profile. Explicit `/T` remains supported. If the
+selected input language is missing, installation appends it with Weasel without
+reordering the existing languages or changing the display language.
+
+CI tests the compiled Word defaults in an isolated registry mapping, the
+language-list helper, preservation of upgrade preferences, and a clean Taiwan
+installation with no Word registry values. The clean-install test verifies the
+installed schema hash and a successfully deployed Taiwan Pinyin prism. These
+installation tests run only on disposable GitHub Actions runners. Building or
+downloading this installer does not install it on the developer's computer.
 
 ## Scope and behavior
 

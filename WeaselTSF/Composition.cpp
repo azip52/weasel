@@ -4,10 +4,11 @@
 #include "ResponseParser.h"
 #include "CandidateList.h"
 #include <cwchar>
+#include "WordWorkaroundSettings.h"
 
 namespace {
 
-// Experimental, opt-in workaround for Word changing an inherited Chinese font
+// Workaround for Word changing an inherited Chinese font
 // when the active input profile is zh-TW. This changes the text language only;
 // the registered input profile and Rime's conversion settings stay unchanged.
 void SetWordTextLanguage(TfEditCookie ec,
@@ -24,12 +25,8 @@ void SetWordTextLanguage(TfEditCookie ec,
   if (!isWord)
     return;
 
-  DWORD language = 0;
-  DWORD size = sizeof(language);
-  if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Rime\\Weasel",
-                   L"WordTextLanguage", RRF_RT_REG_DWORD, nullptr, &language,
-                   &size) != ERROR_SUCCESS ||
-      (language != 0x0804 && language != 0x0404))
+  const DWORD language = word_font_workaround::TextLanguage();
+  if (language != 0x0804 && language != 0x0404)
     return;
 
   BOOL empty = TRUE;

@@ -5,6 +5,8 @@ param(
 
   [switch]$Uninstall,
 
+  [switch]$EnsureLanguage,
+
   [switch]$Library
 )
 
@@ -92,12 +94,24 @@ if ($legacyIds.Count -and (Test-Path $substitutesPath)) {
 }
 $defaultTip = if ($legacyLayouts.Count) { (Get-WinDefaultInputMethodOverride).InputMethodTip }
 $languageList = Get-WinUserLanguageList
+$languageAdded = $false
+if ($EnsureLanguage -and -not $Uninstall) {
+  $targetId = ($Tip -split ':', 2)[0]
+  $target = @($languageList | Where-Object { (Get-LanguageId $_) -ieq $targetId })
+  if (-not $target.Count) {
+    $culture = [Globalization.CultureInfo]::GetCultureInfo([Convert]::ToInt32($targetId, 16))
+    $language = (New-WinUserLanguageList $culture.Name)[0]
+    $language.InputMethodTips.Clear()
+    [void]$languageList.Add($language)
+    $languageAdded = $true
+  }
+}
 $result = Update-WeaselLanguageList $languageList $Tip `
   -Remove:$Uninstall -LegacyLayouts $legacyIds
 if ($result -eq 2) {
   exit 2
 }
-if ($result) {
+if ($result -or $languageAdded) {
   Set-WinUserLanguageList -LanguageList $languageList -Force
 }
 

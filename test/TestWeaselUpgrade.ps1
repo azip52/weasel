@@ -40,6 +40,10 @@ $originalDisplayLanguage = Get-WinUILanguageOverride
 $originalInputMethod = Get-WinDefaultInputMethodOverride
 
 try {
+  # This suite checks preservation of an existing Simplified Chinese preference.
+  New-Item -Path 'HKCU:\Software\Rime\Weasel' -Force | Out-Null
+  New-ItemProperty -Path 'HKCU:\Software\Rime\Weasel' -Name Profile -Value hans -PropertyType String -Force | Out-Null
+  New-ItemProperty -Path 'HKCU:\Software\Rime\Weasel' -Name Hant -Value 0 -PropertyType DWord -Force | Out-Null
   $languages = New-WinUserLanguageList 'zh-CN'
   $languages.Add('en-US')
   Set-WinUserLanguageList $languages -Force

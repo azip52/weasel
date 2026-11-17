@@ -1,4 +1,4 @@
-﻿// WeaselSetup.cpp : main source file for WeaselSetup.exe
+// WeaselSetup.cpp : main source file for WeaselSetup.exe
 //
 
 #include "stdafx.h"
@@ -55,9 +55,9 @@ static std::wstring install_dir() {
   return dir;
 }
 
-static int CustomInstall(bool installing) {
-  std::wstring profile = L"hans";
-  bool silent = false;
+static int CustomInstall(bool installing, bool force_silent = false) {
+  std::wstring profile = L"hant";
+  bool silent = force_silent;
   std::wstring user_dir;
 
   const WCHAR KEY[] = L"Software\\Rime\\Weasel";
@@ -250,6 +250,9 @@ static int Run(LPTSTR lpCmdLine) {
   if (!IsProcAdmin()) {
     return RestartAsAdmin(lpCmdLine);
   }
+
+  if (!wcscmp(L"/quiet", lpCmdLine))
+    return CustomInstall(true, true);
 
   bool hans = !wcscmp(L"/s", lpCmdLine);
   if (hans)

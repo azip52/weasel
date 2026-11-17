@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include <string>
 #include <msctf.h>
 #include <strsafe.h>
@@ -180,6 +180,8 @@ static user_language_profile_result update_user_language_profile(
       script + L"\" -Tip \"" + title + L"\"";
   if (uninstall) {
     command += L" -Uninstall";
+  } else {
+    command += L" -EnsureLanguage";
   }
 
   STARTUPINFOW startup_info = {sizeof(startup_info)};

@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include "InstallOptionsDlg.h"
 #include <atlstr.h>
 #include <ShlObj.h>
@@ -7,7 +7,7 @@
 int uninstall(bool silent);
 
 InstallOptionsDialog::InstallOptionsDialog()
-    : installed(false), profile(L"hans"), user_dir() {}
+    : installed(false), profile(L"hant"), user_dir() {}
 
 InstallOptionsDialog::~InstallOptionsDialog() {}
 

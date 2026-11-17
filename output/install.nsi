@@ -1,4 +1,4 @@
-﻿; weasel installation script
+; weasel installation script
 !include FileFunc.nsh
 !include LogicLib.nsh
 !include MUI2.nsh
@@ -299,7 +299,7 @@ program_files:
   ClearErrors
   ${GetOptions} $R0 "/S" $R1
   IfErrors +2 0
-  StrCpy $R2 "/s"
+  StrCpy $R2 "/quiet"
   ${GetOptions} $R0 "/T" $R1
   IfErrors +2 0
   StrCpy $R2 "/t"

@@ -2,6 +2,7 @@
 
 #include <oleacc.h>
 #include <cwchar>
+#include "WordWorkaroundSettings.h"
 
 #pragma comment(lib, "oleacc.lib")
 
@@ -18,12 +19,7 @@ inline bool Enabled() {
   }();
   if (!isWord || (LOWORD(GetKeyboardLayout(0)) != 0x0404))
     return false;
-  DWORD enabled = 0;
-  DWORD size = sizeof(enabled);
-  return RegGetValueW(HKEY_CURRENT_USER, L"Software\\Rime\\Weasel",
-                      L"WordFollowStyleOnEnter", RRF_RT_REG_DWORD, nullptr,
-                      &enabled, &size) == ERROR_SUCCESS &&
-         enabled == 1;
+  return FollowStyleOnEnter();
 }
 
 inline HRESULT GetProperty(IDispatch* object,

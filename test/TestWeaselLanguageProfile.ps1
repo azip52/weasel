@@ -216,6 +216,17 @@ try {
 }
 Assert-Test ($testState.Removed.Count -eq 0) 'A failed migration removed the legacy registration.'
 
+$testState = @{ Languages = New-WinUserLanguageList 'en-US'; Writes = 0; Layouts = @(); Registry = @{} }
+$english = $testState.Languages[0].InputMethodTips -join ','
+& $scriptPath -Tip $tipHant -EnsureLanguage
+Assert-Test ($LASTEXITCODE -eq 0) 'Creating a missing Taiwan language failed.'
+Assert-Test ($testState.Languages.Count -eq 2) 'The Taiwan language was not appended.'
+Assert-Test (($testState.Languages[0].InputMethodTips -join ',') -eq $english) 'Existing English tips changed.'
+Assert-Test ($testState.Languages[1].LanguageTag -eq 'zh-TW' -and $testState.Languages[1].InputMethodTips[0] -eq $tipHant) 'The new Taiwan language has the wrong TIP.'
+Assert-Test ($testState.Writes -eq 1) 'Creating a missing language was not written once.'
+& $scriptPath -Tip $tipHant -EnsureLanguage
+Assert-Test ($testState.Writes -eq 1) 'Repeated language creation was not idempotent.'
+
 $testState.Layouts = @()
 $testState.Languages = New-WinUserLanguageList 'zh-CN'
 function Set-WinUserLanguageList { throw 'Language list write failed.' }

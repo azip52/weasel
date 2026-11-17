@@ -43,6 +43,12 @@ jobs:
             WeaselTSF/WordFontWorkaround.h
             WeaselTSF/KeyEventSink.cpp
             WeaselTSF/WeaselTSF.h
+            WeaselTSF/WordWorkaroundSettings.h
+            WeaselTSF/Composition.cpp
+            WeaselSetup/WeaselSetup.cpp
+            WeaselSetup/InstallOptionsDlg.cpp
+            WeaselSetup/imesetup.cpp
+            test/TestWordWorkaroundSettings.cpp
 
   build:
     needs: lint
@@ -162,6 +168,14 @@ jobs:
         shell: powershell
         run: .\test\TestWeaselLanguageProfile.ps1
 
+      - name: Test Word defaults without user registry settings
+        shell: pwsh
+        run: |
+          cl /nologo /EHsc /std:c++17 test\TestWordWorkaroundSettings.cpp /Fe:$env:RUNNER_TEMP\TestWordSettings.exe /Fo:$env:RUNNER_TEMP\TestWordSettings.obj /link advapi32.lib
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\TestWordSettings.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Test upgrade language settings
         if: matrix.variant == 'msbuild'
         shell: powershell
@@ -169,6 +183,13 @@ jobs:
         run: |
           $installer = Get-Item .\output\archives\weasel*-installer.exe
           .\test\TestWeaselUpgrade.ps1 -Installer $installer.FullName
+
+      - name: Test personalized clean install on disposable runner
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $installer = Get-Item .\output\archives\weasel*-installer.exe
+          .\test\TestPersonalizedInstall.ps1 -Installer $installer.FullName
 
       - name: Compress Debug Symbols
         if: matrix.variant == 'msbuild'
