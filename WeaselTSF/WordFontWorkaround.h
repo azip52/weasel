@@ -21,20 +21,20 @@ inline bool Enabled() {
   DWORD enabled = 0;
   DWORD size = sizeof(enabled);
   return RegGetValueW(HKEY_CURRENT_USER, L"Software\\Rime\\Weasel",
-                       L"WordFollowStyleOnEnter", RRF_RT_REG_DWORD, nullptr,
-                       &enabled, &size) == ERROR_SUCCESS &&
+                      L"WordFollowStyleOnEnter", RRF_RT_REG_DWORD, nullptr,
+                      &enabled, &size) == ERROR_SUCCESS &&
          enabled == 1;
 }
 
 inline HRESULT GetProperty(IDispatch* object,
-                            const wchar_t* name,
-                            CComVariant& value) {
+                           const wchar_t* name,
+                           CComVariant& value) {
   if (!object)
     return E_POINTER;
   DISPID id;
   LPOLESTR member = const_cast<LPOLESTR>(name);
-  HRESULT hr = object->GetIDsOfNames(IID_NULL, &member, 1, LOCALE_USER_DEFAULT,
-                                     &id);
+  HRESULT hr =
+      object->GetIDsOfNames(IID_NULL, &member, 1, LOCALE_USER_DEFAULT, &id);
   if (FAILED(hr))
     return hr;
   DISPPARAMS args = {};
@@ -50,14 +50,14 @@ inline com_ptr<IDispatch> GetObject(IDispatch* object, const wchar_t* name) {
 }
 
 inline HRESULT PutProperty(IDispatch* object,
-                            const wchar_t* name,
-                            CComVariant& value) {
+                           const wchar_t* name,
+                           CComVariant& value) {
   if (!object)
     return E_POINTER;
   DISPID id;
   LPOLESTR member = const_cast<LPOLESTR>(name);
-  HRESULT hr = object->GetIDsOfNames(IID_NULL, &member, 1, LOCALE_USER_DEFAULT,
-                                     &id);
+  HRESULT hr =
+      object->GetIDsOfNames(IID_NULL, &member, 1, LOCALE_USER_DEFAULT, &id);
   if (FAILED(hr))
     return hr;
   DISPID named = DISPID_PROPERTYPUT;
@@ -71,8 +71,9 @@ inline BOOL CALLBACK FindDocumentWindow(HWND hwnd, LPARAM data) {
   if (GetClassNameW(hwnd, name, ARRAYSIZE(name)) &&
       wcscmp(name, L"_WwG") == 0) {
     com_ptr<IDispatch> candidate;
-    if (SUCCEEDED(AccessibleObjectFromWindow(hwnd, OBJID_NATIVEOM, IID_IDispatch,
-                                             reinterpret_cast<void**>(&candidate))) &&
+    if (SUCCEEDED(
+            AccessibleObjectFromWindow(hwnd, OBJID_NATIVEOM, IID_IDispatch,
+                                       reinterpret_cast<void**>(&candidate))) &&
         candidate) {
       *reinterpret_cast<com_ptr<IDispatch>*>(data) = candidate;
       return FALSE;
@@ -90,8 +91,8 @@ inline HRESULT RestoreStyleFont(ITfContext* context) {
     return S_FALSE;
   com_ptr<ITfContextView> view;
   HWND hwnd = nullptr;
-  if (FAILED(context->GetActiveView(&view)) ||
-      FAILED(view->GetWnd(&hwnd)) || !hwnd)
+  if (FAILED(context->GetActiveView(&view)) || FAILED(view->GetWnd(&hwnd)) ||
+      !hwnd)
     return E_FAIL;
   DWORD process = 0;
   GetWindowThreadProcessId(hwnd, &process);
