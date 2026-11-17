@@ -30,7 +30,19 @@ jobs:
       - name: Code style lint
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         shell: bash
-        run: ./clang-format.sh -i
+        run: |
+          ./clang-format.sh -n
+          git diff --exit-code
+
+      - name: Upload formatted experimental source
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatted-word-source
+          path: |
+            WeaselTSF/WordFontWorkaround.h
+            WeaselTSF/KeyEventSink.cpp
+            WeaselTSF/WeaselTSF.h
 
   build:
     needs: lint

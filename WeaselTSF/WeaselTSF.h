@@ -241,4 +241,5 @@ class WeaselTSF : public ITfTextInputProcessorEx,
   std::shared_ptr<weasel::Context> _pendingUIContext;
   weasel::Status _pendingUIStatus;
   bool _hasPendingUI = false;
+  bool _wordParagraphPending = false;
 };

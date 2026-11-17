@@ -3,6 +3,7 @@
 #include "WeaselTSF.h"
 #include <KeyEvent.h>
 #include "CandidateList.h"
+#include "WordFontWorkaround.h"
 
 static weasel::KeyEvent prevKeyEvent;
 static BOOL prevfEaten = FALSE;
@@ -66,6 +67,7 @@ STDMETHODIMP WeaselTSF::OnSetFocus(BOOL fForeground) {
   if (fForeground)
     m_client.FocusIn();
   else {
+    _wordParagraphPending = false;
     m_client.FocusOut();
     _AbortComposition();
   }
@@ -92,7 +94,11 @@ STDMETHODIMP WeaselTSF::OnTestKeyDown(ITfContext* pContext,
     *pfEaten = TRUE;
     return S_OK;
   }
+  const bool plainEnter = word_font_workaround::IsPlainEnter(wParam) &&
+                          !_status.composing && !_IsComposing();
   _ProcessKeyEvent(wParam, lParam, pfEaten);
+  if (plainEnter && !*pfEaten)
+    _wordParagraphPending = true;
   _UpdateComposition(pContext);
   if (*pfEaten)
     _fTestKeyDownPending = TRUE;
@@ -108,7 +114,11 @@ STDMETHODIMP WeaselTSF::OnKeyDown(ITfContext* pContext,
     _fTestKeyDownPending = FALSE;
     *pfEaten = TRUE;
   } else {
+    const bool plainEnter = word_font_workaround::IsPlainEnter(wParam) &&
+                            !_status.composing && !_IsComposing();
     _ProcessKeyEvent(wParam, lParam, pfEaten);
+    if (plainEnter && !*pfEaten)
+      _wordParagraphPending = true;
     _UpdateComposition(pContext);
   }
   return S_OK;
@@ -118,6 +128,10 @@ STDMETHODIMP WeaselTSF::OnTestKeyUp(ITfContext* pContext,
                                     WPARAM wParam,
                                     LPARAM lParam,
                                     BOOL* pfEaten) {
+  if (wParam == VK_RETURN && _wordParagraphPending) {
+    _wordParagraphPending = false;
+    word_font_workaround::FollowParagraphStyle(pContext);
+  }
   _fTestKeyDownPending = FALSE;
   if (_fTestKeyUpPending) {
     *pfEaten = TRUE;
@@ -134,6 +148,10 @@ STDMETHODIMP WeaselTSF::OnKeyUp(ITfContext* pContext,
                                 WPARAM wParam,
                                 LPARAM lParam,
                                 BOOL* pfEaten) {
+  if (wParam == VK_RETURN && _wordParagraphPending) {
+    _wordParagraphPending = false;
+    word_font_workaround::FollowParagraphStyle(pContext);
+  }
   _fTestKeyDownPending = FALSE;
   if (_fTestKeyUpPending) {
     _fTestKeyUpPending = FALSE;

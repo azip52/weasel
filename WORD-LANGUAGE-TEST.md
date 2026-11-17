@@ -1,5 +1,30 @@
 # Word / zh-TW font experiment
 
+**Current status:** the first text-language-only build does not fix pressing Enter
+and accepting the automatically inherited style. That path can select PMingLiU
+before input and DengXian after input. The earlier positive results below apply
+only when the style was explicitly reapplied after Enter.
+
+This revision adds an opt-in Word-specific Enter workaround. It lets Word handle
+a plain Enter normally, then on key release copies the resulting paragraph
+style's `Font.NameFarEast` into the empty insertion point. It does not hard-code
+FangSong or Normal. It skips Enter used to commit an IME composition, modified
+Enter, and nonempty selections. It is not yet verified in Word.
+
+Enable the new experiment together with the existing text-language experiment:
+
+```powershell
+New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordFollowStyleOnEnter -PropertyType DWord -Value 1 -Force
+New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -PropertyType DWord -Value 0x0804 -Force
+```
+
+This intentionally makes a new paragraph follow its paragraph style's East Asian
+font, rather than inheriting a manually overridden font from the previous
+paragraph. Other direct formatting, including size, bold and italic, is retained.
+Word's native object model is obtained from the same Word document window; no
+external Word instance is created and no document text is logged.
+
+
 This branch tests whether explicitly setting TSF `GUID_PROP_LANGID` after
 inserting text prevents Word from replacing an inherited FangSong font with
 PMingLiU. It is an opt-in workaround verified for the reported workflow in the environment below.
