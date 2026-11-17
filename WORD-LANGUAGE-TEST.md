@@ -1,101 +1,86 @@
-# Word / zh-TW font experiment
+# Word / zh-TW font workaround
 
-**Current status:** the first text-language-only build does not fix pressing Enter
-and accepting the automatically inherited style. That path can select PMingLiU
-before input and DengXian after input. The earlier positive results below apply
-only when the style was explicitly reapplied after Enter.
+Verified for the reported workflow on 2026-11-17 (Asia/Taipei), with Word
+16.0.20527.20196 and build commit
+`9faf00e9b09c0b8c350d8d81cbbd738c62d355b1`.
 
-This revision adds an opt-in Word-specific Enter workaround. It lets Word handle
-a plain Enter normally, then on key release copies the resulting paragraph
-style's `Font.NameFarEast` into the empty insertion point. It does not hard-code
-FangSong or Normal. It skips Enter used to commit an IME composition, modified
-Enter, and nonempty selections. It is not yet verified in Word.
+[Successful build and upgrade tests](https://github.com/azip52/weasel/actions/runs/43996297729)
 
-Enable the new experiment together with the existing text-language experiment:
+## Reported problem and fix
+
+With Weasel registered and active as Chinese (Taiwan), pressing Enter at the end
+of a Normal / 內文 paragraph can change the insertion font to PMingLiU. A
+text-language-only workaround can then produce DengXian on committed text.
+Explicitly reapplying the style after Enter hides this additional failure path.
+
+This build adds `WordFollowStyleOnEnter`. After a plain Enter has been passed
+through to Word, the key-release callback reads the resulting selection's style
+and assigns that style's `Font.NameFarEast` to the empty insertion point. It uses
+Word's native object model from the same document window. The paragraph style
+and desired font are not hard-coded.
+
+The existing `WordTextLanguage` experiment sets TSF `GUID_PROP_LANGID` after
+inline or committed text insertion. Both settings were enabled in the successful
+tests below.
+
+## Verified comparison
+
+The original document's theme was left unchanged. No style was manually
+reapplied after Enter.
+
+| Setting / test | After Enter | After input and selecting the committed text |
+| --- | --- | --- |
+| Text-language-only build | PMingLiU / 新細明體 | DengXian |
+| Same new binary, WordFollowStyleOnEnter = 0 | PMingLiU / 新細明體 | DengXian after the UI settled |
+| WordFollowStyleOnEnter = 1 and WordTextLanguage = 0x0804 | FangSong | FangSong |
+| Word fully closed and restarted, original document reopened | FangSong | FangSong for two consecutive commits |
+| Another plain Enter from that newly typed paragraph | FangSong | FangSong for a different candidate |
+
+For the restart checks, the selected text was observed again after a four-second
+pause so the result did not rely on a stale ribbon display. The Word thread's
+actual keyboard LANGID was 0x0404 before and after testing. Registration stayed
+`Hant=1`, `Profile=hant`.
+
+## Enable / disable
+
+The settings are opt-in, disabled by default, and read for each relevant key or
+edit. Installation alone does not enable them on another machine.
 
 ```powershell
 New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordFollowStyleOnEnter -PropertyType DWord -Value 1 -Force
 New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -PropertyType DWord -Value 0x0804 -Force
 ```
 
-This intentionally makes a new paragraph follow its paragraph style's East Asian
-font, rather than inheriting a manually overridden font from the previous
-paragraph. Other direct formatting, including size, bold and italic, is retained.
-Word's native object model is obtained from the same Word document window; no
-external Word instance is created and no document text is logged.
-
-
-This branch tests whether explicitly setting TSF `GUID_PROP_LANGID` after
-inserting text prevents Word from replacing an inherited FangSong font with
-PMingLiU. It is an opt-in workaround verified for the reported workflow in the environment below.
-
-Verified for the reported new-paragraph workflow on 2026-11-17 (Asia/Taipei)
-with Word 16.0.20527.20196 and build commit
-`e55e7b2edbd2d6babaca34601654b1f0f1f50c46`.
-
-| Test | Actual input LANGID | Selected committed text font |
-| --- | --- | --- |
-| Setting absent; new paragraph, explicitly apply Normal | 0x0404 | PMingLiU / 新細明體 |
-| WordTextLanguage = 0x0804; same Word process and workflow | 0x0404 | FangSong |
-| Word fully restarted; fresh original document; new paragraph; two consecutive commits | 0x0404 | FangSong for both selected characters |
-
-The active Word thread keyboard language was checked separately from the
-registry preference: it stayed 0x0404. The registered profile remained
-`Hant=1`, `Profile=hant`. A preliminary 0x0804 input-language run was excluded
-from the Taiwan comparison. The default-off binary reproduces the bug, so the
-result is attributable to enabling the property workaround in this build.
-
-**Mechanism and scope:** the inserted TSF range receives language property
-0x0804 during insertion while the input method stays registered and active as
-Chinese (Taiwan). In the observed tests, Word's status bar continued to show
-Chinese (Taiwan) for the selected text. TSF language metadata should not be
-assumed to be identical to Word's saved proofing-language metadata; the saved
-DOCX language tags have not been audited.
-Other Word versions, inline preedit, Undo, and replacement of existing selected
-text have not yet been verified.
-
-The change applies only inside WINWORD.EXE. It does not change the registered
-input profile, the candidate window font, or Rime's Traditional Chinese output.
-The default is disabled; the setting must be enabled separately after installation.
-No document text is logged.
-
-## Compare the same binary with and without the experiment
-
-1. Install the build and register Weasel as Traditional Chinese (Taiwan).
-2. Close all Word windows and open the original test document again.
-3. With the registry value absent (or zero), create a new paragraph, explicitly
-   apply the Normal / 內文 style, type Chinese with Weasel, then **select the
-   newly committed characters** and record the font shown by Word.
-4. Enable the experimental text language (Simplified Chinese / China):
-
-   ```powershell
-   New-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -PropertyType DWord -Value 0x0804 -Force
-   ```
-
-5. Repeat in a fresh paragraph with the same style. Select the committed text
-   again; the caret's font display alone is not evidence of success.
-6. Also test multiple commits, inline preedit, replacing selected text, Undo,
-   and another application. Confirm the active input profile remains zh-TW.
-
-`0x0404` can be used as a control with an explicit Taiwan text language. Any
-other value, including zero, disables the experiment. The setting is read for
-each edit, so toggling it does not require reinstalling.
-
-To restore the original behavior:
+To disable the experiments:
 
 ```powershell
+Remove-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordFollowStyleOnEnter -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path HKCU:\Software\Rime\Weasel -Name WordTextLanguage -ErrorAction SilentlyContinue
 ```
 
-DebugView or a debugger can observe `Weasel WordTextLanguage: applied/rejected`
-messages. These report only the property API result, not the resulting font.
-An accepted property does not prove that Word preserves formatting.
+## Scope and behavior
 
-## API basis
+- The Enter hook runs only in WINWORD.EXE with keyboard LANGID 0x0404.
+- Enter used to commit an IME composition, modified Enter, and nonempty
+  selections are excluded.
+- A new paragraph intentionally follows its style's East Asian font instead of
+  inheriting a manually overridden East Asian font from the previous paragraph.
+  The code assigns only NameFarEast, rather than resetting all character
+  formatting.
+- Word still creates the paragraph and chooses its next style. No paragraph
+  text, theme, style definition, numbering, or Rime conversion scheme is changed.
+- The TSF inserted range receives language property 0x0804 during insertion.
+  Registration and the actual keyboard language remain Taiwan. In these tests
+  Word's status bar continued to show Chinese (Taiwan); saved DOCX language tags
+  have not been audited.
+- Other Word versions, tables, protected documents, inline preedit, and Undo
+  grouping have not been verified. This is an application-specific workaround.
+- Diagnostics emit only restored/skipped or applied/rejected API outcomes. No
+  document text is logged.
 
+## API references
+
+- [AccessibleObjectFromWindow / Word native object model](https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-accessibleobjectfromwindow)
+- [Word Font.NameFarEast](https://learn.microsoft.com/en-us/office/vba/api/word.font.namefareast)
 - [TSF predefined properties](https://learn.microsoft.com/en-us/windows/win32/tsf/predefined-properties)
 - [ITfProperty::SetValue](https://learn.microsoft.com/en-us/windows/win32/api/msctf/nf-msctf-itfproperty-setvalue)
-
-The property requires a nonempty range and a read/write edit cookie. Editing
-the covered text discards it, so this branch applies it after both inline
-preedit and committed `SetText` calls, before collapsing the range.
