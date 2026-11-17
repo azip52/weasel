@@ -11,22 +11,12 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: package-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  cancel_superseded:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Cancel superseded build with unwanted tests
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: gh api --method POST repos/$GH_REPO/actions/runs/44006236843/cancel || true
-
   lint:
     runs-on: ubuntu-22.04
     steps:
